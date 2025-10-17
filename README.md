@@ -1,4 +1,6 @@
-# LTH Docker
+# LaTeX Docker
+
+Bulit to make and write LaTeX documents with.
 
 ## Configure X11 capabilities
 
