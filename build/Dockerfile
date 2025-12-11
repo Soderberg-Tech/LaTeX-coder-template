@@ -1,4 +1,4 @@
-FROM texlive/texlive:latest
+FROM texlive/texlive:latest-medium
 
 # Updates and installs commons
 RUN apt-get update \

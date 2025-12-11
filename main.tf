@@ -25,6 +25,9 @@ locals {
 resource "coder_agent" "main" {
   arch           = data.coder_provisioner.me.arch
   os             = "linux"
+  display_apps {
+    vscode = false
+  }
   startup_script = <<-EOT
     set -e
 
@@ -40,12 +43,12 @@ resource "coder_agent" "main" {
   # workspace. Note that they take precedence over configuration defined in ~/.gitconfig!
   # You can remove this block if you'd prefer to configure Git manually or using
   # dotfiles. (see docs/dotfiles.md)
-  env = {
-    GIT_AUTHOR_NAME     = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
-    GIT_AUTHOR_EMAIL    = "${data.coder_workspace_owner.me.email}"
-    GIT_COMMITTER_NAME  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
-    GIT_COMMITTER_EMAIL = "${data.coder_workspace_owner.me.email}"
-  }
+  # env = {
+  #   GIT_AUTHOR_NAME     = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
+  #   GIT_AUTHOR_EMAIL    = "${data.coder_workspace_owner.me.email}"
+  #   GIT_COMMITTER_NAME  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
+  #   GIT_COMMITTER_EMAIL = "${data.coder_workspace_owner.me.email}"
+  # }
 
   # The following metadata blocks are optional. They are used to display
   # information about your workspace in the dashboard. You can remove them
@@ -78,6 +81,15 @@ resource "coder_agent" "main" {
 
 }
 
+module "vscode" {
+  count       = data.coder_workspace.me.start_count
+  source      = "registry.coder.com/coder/vscode-desktop/coder"
+  version     = "1.1.1"
+  agent_id    = coder_agent.main.id
+  folder      = "/home/${local.username}"
+  open_recent = true
+}
+
 module "vscode-web" {
   count          = data.coder_workspace.me.start_count
   source         = "registry.coder.com/coder/vscode-web/coder"
@@ -102,8 +114,16 @@ module "vscode-web" {
 module "git-config" {
   count                 = data.coder_workspace.me.start_count
   source                = "registry.coder.com/coder/git-config/coder"
-  version               = "1.0.31"
+  version               = "1.0.32"
   agent_id              = coder_agent.main.id
+  allow_email_change    = true
+}
+
+module "git-commit-signing" {
+  count    = data.coder_workspace.me.start_count
+  source   = "registry.coder.com/coder/git-commit-signing/coder"
+  version  = "1.0.32"
+  agent_id = coder_agent.main.id
 }
 
 resource "docker_volume" "home_volume" {
@@ -150,7 +170,7 @@ resource "docker_container" "workspace" {
   count = data.coder_workspace.me.start_count
   image = docker_image.main.name
   cpu_set = "0-11"
-  memory = 4096
+  memory = 8192
   # Uses lower() to avoid Docker restriction on container names.
   name = "coder-${data.coder_workspace_owner.me.name}-${lower(data.coder_workspace.me.name)}"
   # Hostname makes the shell more user friendly: coder@my-workspace:~$
@@ -166,6 +186,11 @@ resource "docker_container" "workspace" {
     container_path = "/home/${local.username}"
     volume_name    = docker_volume.home_volume.name
     read_only      = false
+  }
+
+  labels {
+    label = "net.unraid.docker.icon"
+    value = "https://soderberg.tech/assets/unraid/latex.png"
   }
 
   # Add labels in Docker to keep track of orphan resources.
