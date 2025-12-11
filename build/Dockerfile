@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM texlive/texlive:latest
 
 # Updates and installs commons
 RUN apt-get update \
@@ -13,9 +13,6 @@ RUN apt-get update \
 # Sets local
 RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG=en_US.utf8
-
-# Install LaTeX
-RUN apt-get install -y texlive-full
 
 # Clears apt lists
 RUN rm -rf /var/lib/apt/lists/* 
