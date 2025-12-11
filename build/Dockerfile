@@ -8,6 +8,7 @@ RUN apt-get update \
 	sudo \
 	vim \
 	wget \
+	jq \
 	locales
 
 # Sets local

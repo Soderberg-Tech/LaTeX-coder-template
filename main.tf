@@ -193,7 +193,6 @@ resource "docker_container" "workspace" {
     value = "https://soderberg.tech/assets/unraid/latex.png"
   }
 
-  # Add labels in Docker to keep track of orphan resources.
   labels {
     label = "coder.owner"
     value = data.coder_workspace_owner.me.name
